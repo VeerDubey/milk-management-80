@@ -1,204 +1,233 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   Brain, 
   TrendingUp, 
-  Target, 
   Users, 
   Package,
-  DollarSign,
-  Activity,
-  Zap
+  BarChart3,
+  Zap,
+  Target,
+  DollarSign
 } from 'lucide-react';
+import { AIAnalyticsService } from '@/services/pro/AIAnalyticsService';
+import { ProLicenseService } from '@/services/pro/ProLicenseService';
 
 export function AIAnalyticsPanel() {
-  const [activeInsight, setActiveInsight] = useState('demand');
+  const [analytics, setAnalytics] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    loadAnalytics();
+  }, []);
+
+  const loadAnalytics = () => {
+    const data = AIAnalyticsService.getAnalytics();
+    setAnalytics(data);
+  };
+
+  const generateDemandPrediction = async () => {
+    if (!ProLicenseService.hasFeature('ai_predictions')) {
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      // Mock historical data
+      const historicalData = [
+        { date: '2024-01-01', stock: 100, sold: 25 },
+        { date: '2024-01-02', stock: 75, sold: 30 },
+        { date: '2024-01-03', stock: 45, sold: 28 },
+        { date: '2024-01-04', stock: 17, sold: 15 },
+      ];
+
+      await AIAnalyticsService.generateDemandPrediction('product_milk_500ml', historicalData);
+      loadAnalytics();
+    } catch (error) {
+      console.error('Error generating prediction:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const optimizePrice = async () => {
+    if (!ProLicenseService.hasFeature('price_optimization')) {
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const marketData = {
+        currentPrice: 50,
+        competitorPrices: [48, 52, 49],
+        demandHistory: [100, 95, 110, 105]
+      };
+
+      await AIAnalyticsService.optimizePrice('product_milk_500ml', marketData);
+      loadAnalytics();
+    } catch (error) {
+      console.error('Error optimizing price:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const segmentCustomers = async () => {
+    if (!ProLicenseService.hasFeature('customer_segmentation')) {
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      // Mock customer data
+      const customers = [
+        { id: 'c1', totalPurchases: 15000, daysSinceLastOrder: 5 },
+        { id: 'c2', totalPurchases: 5000, daysSinceLastOrder: 15 },
+        { id: 'c3', totalPurchases: 500, daysSinceLastOrder: 120 },
+        { id: 'c4', totalPurchases: 25000, daysSinceLastOrder: 2 },
+      ];
+
+      await AIAnalyticsService.segmentCustomers(customers);
+      loadAnalytics();
+    } catch (error) {
+      console.error('Error segmenting customers:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const insights = [
     {
-      id: 'demand',
-      title: 'Demand Prediction',
-      description: 'AI-powered demand forecasting for your products',
       icon: TrendingUp,
-      color: 'from-blue-500 to-cyan-500',
-      data: {
-        accuracy: '94.2%',
-        nextWeek: '+12% demand increase predicted',
-        topProducts: ['Milk 500ml', 'Curd 250g', 'Butter 100g']
-      }
+      title: 'Demand Forecast',
+      description: 'Predict product demand with 85% accuracy',
+      action: generateDemandPrediction,
+      feature: 'ai_predictions'
     },
     {
-      id: 'customer',
-      title: 'Customer Insights',
-      description: 'Deep customer behavior analysis and segmentation',
-      icon: Users,
-      color: 'from-purple-500 to-pink-500',
-      data: {
-        segments: 4,
-        highValue: '23% of customers',
-        churnRisk: '8 customers at risk'
-      }
-    },
-    {
-      id: 'pricing',
-      title: 'Price Optimization',
-      description: 'Dynamic pricing recommendations based on market conditions',
       icon: DollarSign,
-      color: 'from-green-500 to-emerald-500',
-      data: {
-        opportunities: 12,
-        revenue: '+₹2,400 potential increase',
-        products: ['Premium Milk', 'Organic Curd']
-      }
+      title: 'Price Optimization',
+      description: 'AI-powered pricing recommendations',
+      action: optimizePrice,
+      feature: 'price_optimization'
     },
     {
-      id: 'inventory',
-      title: 'Smart Inventory',
-      description: 'Intelligent stock management and reorder predictions',
-      icon: Package,
-      color: 'from-orange-500 to-red-500',
-      data: {
-        reorders: 5,
-        stockouts: '0 predicted next week',
-        savings: '₹1,200 in reduced waste'
-      }
+      icon: Users,
+      title: 'Customer Segmentation',
+      description: 'Automatically group customers by behavior',
+      action: segmentCustomers,
+      feature: 'customer_segmentation'
     }
   ];
 
-  const currentInsight = insights.find(i => i.id === activeInsight);
-
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="text-center space-y-2">
-        <h2 className="text-3xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent flex items-center justify-center gap-3">
-          <Brain className="h-8 w-8 text-blue-400" />
-          AI Analytics Suite
-        </h2>
-        <p className="text-slate-300">Advanced machine learning insights for your business</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-bold text-white flex items-center gap-2">
+            <Brain className="h-6 w-6 text-blue-400" />
+            AI Analytics
+          </h2>
+          <p className="text-slate-400">Advanced machine learning insights</p>
+        </div>
+        <Badge className="bg-blue-600/20 text-blue-400 border-blue-500/30">
+          AI Powered
+        </Badge>
       </div>
 
-      {/* Insight Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {insights.map((insight) => {
+      {/* Action Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {insights.map((insight, index) => {
           const Icon = insight.icon;
-          const isActive = activeInsight === insight.id;
+          const hasAccess = ProLicenseService.hasFeature(insight.feature);
           
           return (
-            <Card 
-              key={insight.id}
-              className={`cursor-pointer transition-all duration-300 hover:scale-105 ${
-                isActive ? 'ring-2 ring-blue-500/50 bg-blue-900/20' : 'bg-slate-900/50'
-              } border-slate-700/50`}
-              onClick={() => setActiveInsight(insight.id)}
-            >
+            <Card key={index} className="bg-slate-900/50 border-slate-700/50">
               <CardHeader className="pb-3">
-                <div className={`p-3 rounded-lg bg-gradient-to-r ${insight.color} w-fit`}>
-                  <Icon className="h-6 w-6 text-white" />
+                <div className="flex items-center justify-between">
+                  <Icon className={hasAccess ? 'h-5 w-5 text-blue-400' : 'h-5 w-5 text-slate-400'} />
+                  {!hasAccess && (
+                    <Badge variant="outline" className="text-xs border-yellow-500/30 text-yellow-400">
+                      PRO
+                    </Badge>
+                  )}
                 </div>
                 <CardTitle className="text-white text-lg">{insight.title}</CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-slate-400 text-sm">{insight.description}</p>
-                {isActive && (
-                  <Badge className="mt-2 bg-blue-600/20 text-blue-400 border-blue-500/30">
-                    Active View
-                  </Badge>
-                )}
+                <p className="text-slate-400 text-sm mb-4">{insight.description}</p>
+                <Button 
+                  onClick={insight.action}
+                  disabled={!hasAccess || isLoading}
+                  className={hasAccess 
+                    ? "w-full bg-blue-600 hover:bg-blue-700" 
+                    : "w-full bg-slate-700 text-slate-400 cursor-not-allowed"
+                  }
+                >
+                  {isLoading ? (
+                    <div className="flex items-center gap-2">
+                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                      Processing...
+                    </div>
+                  ) : hasAccess ? (
+                    <>
+                      <Zap className="mr-2 h-4 w-4" />
+                      Generate
+                    </>
+                  ) : (
+                    'Upgrade Required'
+                  )}
+                </Button>
               </CardContent>
             </Card>
           );
         })}
       </div>
 
-      {/* Detailed View */}
-      {currentInsight && (
+      {/* Analytics Results */}
+      {analytics.length > 0 && (
         <Card className="bg-slate-900/50 border-slate-700/50">
           <CardHeader>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className={`p-3 rounded-lg bg-gradient-to-r ${currentInsight.color}`}>
-                  <currentInsight.icon className="h-6 w-6 text-white" />
-                </div>
-                <div>
-                  <CardTitle className="text-white text-xl">{currentInsight.title}</CardTitle>
-                  <p className="text-slate-400">{currentInsight.description}</p>
-                </div>
-              </div>
-              <Button className="bg-gradient-to-r from-blue-600 to-purple-600">
-                <Zap className="mr-2 h-4 w-4" />
-                Run Analysis
-              </Button>
-            </div>
+            <CardTitle className="text-white flex items-center gap-2">
+              <BarChart3 className="h-5 w-5 text-green-400" />
+              Recent AI Insights
+            </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {/* Key Metrics */}
-              <div className="space-y-4">
-                <h4 className="text-white font-semibold">Key Metrics</h4>
-                {Object.entries(currentInsight.data).map(([key, value]) => (
-                  <div key={key} className="flex justify-between items-center">
-                    <span className="text-slate-400 capitalize">{key.replace(/([A-Z])/g, ' $1')}</span>
-                    <span className="text-white font-medium">
-                      {Array.isArray(value) ? `${value.length} items` : value}
-                    </span>
+            <div className="space-y-4">
+              {analytics.slice(0, 5).map((item, index) => (
+                <div key={index} className="flex items-start justify-between p-4 bg-slate-800/50 rounded-lg">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Badge className={`text-xs ${
+                        item.type === 'demand_prediction' ? 'bg-blue-600/20 text-blue-400 border-blue-500/30' :
+                        item.type === 'price_optimization' ? 'bg-green-600/20 text-green-400 border-green-500/30' :
+                        'bg-purple-600/20 text-purple-400 border-purple-500/30'
+                      }`}>
+                        {item.type.replace('_', ' ')}
+                      </Badge>
+                      <span className="text-slate-400 text-xs">
+                        Confidence: {Math.round(item.confidence * 100)}%
+                      </span>
+                    </div>
+                    <div className="space-y-1">
+                      {item.insights.map((insight: string, idx: number) => (
+                        <p key={idx} className="text-slate-300 text-sm">• {insight}</p>
+                      ))}
+                    </div>
                   </div>
-                ))}
-              </div>
-
-              {/* Visualization Placeholder */}
-              <div className="md:col-span-2">
-                <div className="h-64 bg-slate-800/50 rounded-lg flex items-center justify-center border border-slate-700/50">
-                  <div className="text-center">
-                    <Activity className="h-12 w-12 text-slate-500 mx-auto mb-3" />
-                    <p className="text-slate-400">AI Analytics Visualization</p>
-                    <p className="text-slate-500 text-sm">Charts and insights will be displayed here</p>
+                  <div className="text-slate-400 text-xs">
+                    {new Date(item.createdAt).toLocaleDateString()}
                   </div>
                 </div>
-              </div>
-            </div>
-
-            {/* Action Buttons */}
-            <div className="flex gap-3 mt-6">
-              <Button variant="outline" className="border-slate-600 text-slate-300">
-                Export Report
-              </Button>
-              <Button variant="outline" className="border-slate-600 text-slate-300">
-                Schedule Analysis
-              </Button>
-              <Button className="bg-gradient-to-r from-green-600 to-emerald-600">
-                Apply Recommendations
-              </Button>
+              ))}
             </div>
           </CardContent>
         </Card>
       )}
-
-      {/* AI Status */}
-      <Card className="bg-gradient-to-r from-indigo-600/20 to-purple-600/20 border-indigo-500/30">
-        <CardContent className="p-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div className="p-3 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl">
-                <Brain className="h-6 w-6 text-white" />
-              </div>
-              <div>
-                <h3 className="text-xl font-bold text-white">AI Engine Status</h3>
-                <p className="text-slate-300">Machine learning models are active and learning</p>
-              </div>
-            </div>
-            <div className="text-right">
-              <div className="flex items-center gap-2 text-green-400 mb-2">
-                <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-                <span className="text-sm font-medium">Online & Processing</span>
-              </div>
-              <p className="text-slate-400 text-sm">Last updated: 2 minutes ago</p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
     </div>
   );
 }

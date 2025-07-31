@@ -25,16 +25,13 @@ import {
   CheckCircle
 } from 'lucide-react';
 import { ProLicenseService } from '@/services/pro/ProLicenseService';
-import { ProDashboard } from '@/components/pro/ProDashboard';
-import { AIAnalyticsPanel } from '@/components/pro/AIAnalyticsPanel';
-import { SecurityCenter } from '@/components/pro/SecurityCenter';
-import { AdvancedAutomation } from '@/components/pro/AdvancedAutomation';
-import { EnterpriseFeatures } from '@/components/pro/EnterpriseFeatures';
+import { UpgradeDialog } from '@/components/pro/UpgradeDialog';
 
 export default function ProMode() {
   const [userPlan] = useState('free'); // Mock user plan
   const [activeTab, setActiveTab] = useState('all');
   const [licenseKey, setLicenseKey] = useState('');
+  const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
 
   const handleLicenseActivation = async () => {
     if (!licenseKey.trim()) {
@@ -271,7 +268,10 @@ export default function ProMode() {
               <Crown className="mr-1 h-3 w-3" />
               Pro Features
             </Badge>
-            <Button className="bg-gradient-to-r from-yellow-600 to-orange-600 hover:from-yellow-700 hover:to-orange-700">
+            <Button 
+              onClick={() => setShowUpgradeDialog(true)}
+              className="bg-gradient-to-r from-yellow-600 to-orange-600 hover:from-yellow-700 hover:to-orange-700"
+            >
               <Rocket className="mr-2 h-4 w-4" />
               Upgrade Now
             </Button>
@@ -444,6 +444,12 @@ export default function ProMode() {
             </Tabs>
           </CardContent>
         </Card>
+
+        {/* Upgrade Dialog */}
+        <UpgradeDialog 
+          open={showUpgradeDialog} 
+          onOpenChange={setShowUpgradeDialog}
+        />
       </div>
     </div>
   );

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -6,162 +6,196 @@ import { Switch } from '@/components/ui/switch';
 import { 
   Shield, 
   Lock, 
-  Eye, 
-  KeyRound,
+  Key,
+  Eye,
   AlertTriangle,
   CheckCircle,
-  UserCheck,
-  FileText,
-  Smartphone,
-  Globe
+  XCircle,
+  History,
+  Smartphone
 } from 'lucide-react';
+import { SecurityService } from '@/services/pro/SecurityService';
+import { ProLicenseService } from '@/services/pro/ProLicenseService';
+import { toast } from '@/hooks/use-toast';
 
 export function SecurityCenter() {
-  const [securitySettings, setSecuritySettings] = useState({
-    twoFactor: true,
-    encryption: true,
-    auditLogs: true,
-    loginAlerts: false,
-    ipWhitelist: false,
-    sessionTimeout: true,
-    dataBackup: true,
-    accessControl: true
-  });
+  const [auditLogs, setAuditLogs] = useState<any[]>([]);
+  const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const toggleSetting = (setting: string) => {
-    setSecuritySettings(prev => ({
-      ...prev,
-      [setting]: !prev[setting]
-    }));
+  useEffect(() => {
+    loadSecurityData();
+  }, []);
+
+  const loadSecurityData = () => {
+    const logs = SecurityService.getAuditLogs('current_user', 10);
+    setAuditLogs(logs);
+    
+    const twoFactorConfig = SecurityService.getTwoFactorConfig('current_user');
+    setTwoFactorEnabled(twoFactorConfig?.isEnabled || false);
+  };
+
+  const handleEnableTwoFactor = async () => {
+    if (!ProLicenseService.hasFeature('advanced_security')) {
+      toast({
+        title: "Upgrade Required",
+        description: "Advanced Security features require a Pro license",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const result = await SecurityService.enableTwoFactor('current_user');
+      setTwoFactorEnabled(true);
+      
+      toast({
+        title: "Two-Factor Authentication Enabled",
+        description: "Scan the QR code with your authenticator app",
+      });
+      
+      // In a real app, show QR code modal
+      console.log('2FA Setup:', result);
+      
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to enable two-factor authentication",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleDisableTwoFactor = async () => {
+    setIsLoading(true);
+    try {
+      await SecurityService.disableTwoFactor('current_user');
+      setTwoFactorEnabled(false);
+      
+      toast({
+        title: "Two-Factor Authentication Disabled",
+        description: "Your account is now using single-factor authentication",
+      });
+      
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to disable two-factor authentication",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const securityFeatures = [
     {
-      id: 'twoFactor',
+      id: 'two_factor',
       title: 'Two-Factor Authentication',
-      description: 'Add an extra layer of security with 2FA',
+      description: 'Add an extra layer of security to your account',
       icon: Smartphone,
-      status: 'active',
-      category: 'Authentication'
+      enabled: twoFactorEnabled,
+      toggle: twoFactorEnabled ? handleDisableTwoFactor : handleEnableTwoFactor,
+      pro: true
     },
     {
-      id: 'encryption',
-      title: 'End-to-End Encryption',
-      description: 'All data encrypted in transit and at rest',
+      id: 'audit_logging',
+      title: 'Security Audit Logging',
+      description: 'Track all security-related events and access attempts',
+      icon: History,
+      enabled: true,
+      pro: true
+    },
+    {
+      id: 'data_encryption',
+      title: 'Data Encryption',
+      description: 'Encrypt sensitive data at rest and in transit',
       icon: Lock,
-      status: 'active',
-      category: 'Data Protection'
-    },
-    {
-      id: 'auditLogs',
-      title: 'Security Audit Logs',
-      description: 'Complete audit trail of all user activities',
-      icon: FileText,
-      status: 'active',
-      category: 'Monitoring'
-    },
-    {
-      id: 'accessControl',
-      title: 'Role-Based Access Control',
-      description: 'Granular permissions and role management',
-      icon: UserCheck,
-      status: 'active',
-      category: 'Access Management'
-    },
-    {
-      id: 'ipWhitelist',
-      title: 'IP Address Whitelisting',
-      description: 'Restrict access to approved IP addresses',
-      icon: Globe,
-      status: 'inactive',
-      category: 'Network Security'
-    },
-    {
-      id: 'loginAlerts',
-      title: 'Login Alert System',
-      description: 'Real-time notifications for login attempts',
-      icon: AlertTriangle,
-      status: 'inactive',
-      category: 'Monitoring'
+      enabled: true,
+      pro: true
     }
   ];
 
-  const securityMetrics = [
-    { title: 'Security Score', value: '94%', icon: Shield, color: 'text-green-400' },
-    { title: 'Active Sessions', value: '12', icon: Eye, color: 'text-blue-400' },
-    { title: 'Failed Logins', value: '0', icon: AlertTriangle, color: 'text-yellow-400' },
-    { title: 'Audit Logs', value: '1,247', icon: FileText, color: 'text-purple-400' }
-  ];
+  const hasSecurityAccess = ProLicenseService.hasFeature('advanced_security');
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="text-center space-y-2">
-        <h2 className="text-3xl font-bold bg-gradient-to-r from-green-400 to-emerald-400 bg-clip-text text-transparent flex items-center justify-center gap-3">
-          <Shield className="h-8 w-8 text-green-400" />
-          Security Center
-        </h2>
-        <p className="text-slate-300">Enterprise-grade security for your data and operations</p>
-      </div>
-
-      {/* Security Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {securityMetrics.map((metric) => {
-          const Icon = metric.icon;
-          return (
-            <Card key={metric.title} className="bg-slate-900/50 border-slate-700/50">
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-slate-400 text-sm font-medium">{metric.title}</p>
-                    <p className="text-2xl font-bold text-white">{metric.value}</p>
-                  </div>
-                  <Icon className={`h-8 w-8 ${metric.color}`} />
-                </div>
-              </CardContent>
-            </Card>
-          );
-        })}
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-bold text-white flex items-center gap-2">
+            <Shield className="h-6 w-6 text-green-400" />
+            Security Center
+          </h2>
+          <p className="text-slate-400">Manage security settings and monitor access</p>
+        </div>
+        <Badge className={hasSecurityAccess 
+          ? "bg-green-600/20 text-green-400 border-green-500/30"
+          : "bg-yellow-600/20 text-yellow-400 border-yellow-500/30"
+        }>
+          {hasSecurityAccess ? 'Security Enabled' : 'Upgrade Required'}
+        </Badge>
       </div>
 
       {/* Security Features */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {securityFeatures.map((feature) => {
           const Icon = feature.icon;
-          const isActive = securitySettings[feature.id];
           
           return (
             <Card key={feature.id} className="bg-slate-900/50 border-slate-700/50">
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className={`p-2 rounded-lg ${
-                      isActive ? 'bg-green-600/20' : 'bg-slate-800/50'
-                    }`}>
-                      <Icon className={`h-5 w-5 ${
-                        isActive ? 'text-green-400' : 'text-slate-400'
-                      }`} />
-                    </div>
-                    <div>
-                      <CardTitle className="text-white text-sm font-semibold">{feature.title}</CardTitle>
-                      <Badge variant="outline" className="text-xs mt-1 border-slate-600 text-slate-400">
-                        {feature.category}
+                  <Icon className={feature.enabled && hasSecurityAccess ? 'h-5 w-5 text-green-400' : 'h-5 w-5 text-slate-400'} />
+                  <div className="flex gap-2">
+                    {feature.pro && (
+                      <Badge variant="outline" className="text-xs border-yellow-500/30 text-yellow-400">
+                        PRO
                       </Badge>
-                    </div>
+                    )}
+                    {feature.enabled && hasSecurityAccess && (
+                      <Badge className="bg-green-600/20 text-green-400 border-green-500/30 text-xs">
+                        ACTIVE
+                      </Badge>
+                    )}
                   </div>
-                  <Switch
-                    checked={isActive}
-                    onCheckedChange={() => toggleSetting(feature.id)}
-                  />
                 </div>
+                <CardTitle className="text-white text-lg">{feature.title}</CardTitle>
               </CardHeader>
-              <CardContent className="pt-0">
-                <p className="text-slate-400 text-sm mb-3">{feature.description}</p>
+              <CardContent>
+                <p className="text-slate-400 text-sm mb-4">{feature.description}</p>
                 
-                {isActive && (
-                  <div className="flex items-center gap-2 text-green-400 text-xs">
-                    <CheckCircle className="w-3 h-3" />
-                    <span>Active & Secured</span>
+                {feature.toggle ? (
+                  <Button 
+                    onClick={feature.toggle}
+                    disabled={!hasSecurityAccess || isLoading}
+                    className={hasSecurityAccess 
+                      ? `w-full ${feature.enabled ? 'bg-red-600 hover:bg-red-700' : 'bg-green-600 hover:bg-green-700'}`
+                      : "w-full bg-slate-700 text-slate-400 cursor-not-allowed"
+                    }
+                  >
+                    {isLoading ? (
+                      <div className="flex items-center gap-2">
+                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                        Processing...
+                      </div>
+                    ) : hasSecurityAccess ? (
+                      feature.enabled ? 'Disable' : 'Enable'
+                    ) : (
+                      'Upgrade Required'
+                    )}
+                  </Button>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <Switch 
+                      checked={feature.enabled && hasSecurityAccess}
+                      disabled={!hasSecurityAccess}
+                    />
+                    <span className="text-xs text-slate-400">
+                      {feature.enabled && hasSecurityAccess ? 'ON' : 'OFF'}
+                    </span>
                   </div>
                 )}
               </CardContent>
@@ -170,51 +204,57 @@ export function SecurityCenter() {
         })}
       </div>
 
-      {/* Security Actions */}
-      <Card className="bg-slate-900/50 border-slate-700/50">
-        <CardHeader>
-          <CardTitle className="text-white flex items-center gap-2">
-            <KeyRound className="h-5 w-5" />
-            Security Actions
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Button variant="outline" className="border-slate-600 text-slate-300 h-auto p-4 flex-col gap-2">
-              <Lock className="h-6 w-6" />
-              <span>Generate Backup Codes</span>
-            </Button>
-            <Button variant="outline" className="border-slate-600 text-slate-300 h-auto p-4 flex-col gap-2">
-              <FileText className="h-6 w-6" />
-              <span>Download Audit Report</span>
-            </Button>
-            <Button variant="outline" className="border-slate-600 text-slate-300 h-auto p-4 flex-col gap-2">
-              <Shield className="h-6 w-6" />
-              <span>Run Security Scan</span>
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Security Status */}
-      <Card className="bg-gradient-to-r from-green-600/20 to-emerald-600/20 border-green-500/30">
-        <CardContent className="p-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div className="p-3 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl">
-                <Shield className="h-6 w-6 text-white" />
-              </div>
-              <div>
-                <h3 className="text-xl font-bold text-white">System Security Status</h3>
-                <p className="text-slate-300">All security measures are active and functioning normally</p>
-              </div>
+      {/* Security Audit Logs */}
+      {hasSecurityAccess && auditLogs.length > 0 && (
+        <Card className="bg-slate-900/50 border-slate-700/50">
+          <CardHeader>
+            <CardTitle className="text-white flex items-center gap-2">
+              <Eye className="h-5 w-5 text-blue-400" />
+              Recent Security Events
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {auditLogs.map((log, index) => (
+                <div key={index} className="flex items-center justify-between p-3 bg-slate-800/50 rounded-lg">
+                  <div className="flex items-center gap-3">
+                    {log.success ? (
+                      <CheckCircle className="h-4 w-4 text-green-400" />
+                    ) : (
+                      <XCircle className="h-4 w-4 text-red-400" />
+                    )}
+                    <div>
+                      <p className="text-white text-sm font-medium">
+                        {log.action.replace('_', ' ').toUpperCase()}
+                      </p>
+                      <p className="text-slate-400 text-xs">
+                        {log.resource} • {log.ipAddress}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="text-slate-400 text-xs">
+                    {new Date(log.timestamp).toLocaleString()}
+                  </div>
+                </div>
+              ))}
             </div>
-            <div className="text-right">
-              <div className="flex items-center gap-2 text-green-400 mb-2">
-                <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-                <span className="text-sm font-medium">Fully Secured</span>
-              </div>
-              <p className="text-slate-400 text-sm">Last scan: 5 minutes ago</p>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Security Tips */}
+      <Card className="bg-gradient-to-r from-blue-600/10 to-purple-600/10 border-blue-500/20">
+        <CardContent className="p-6">
+          <div className="flex items-start gap-4">
+            <AlertTriangle className="h-6 w-6 text-yellow-400 mt-1" />
+            <div>
+              <h3 className="text-white font-semibold mb-2">Security Best Practices</h3>
+              <ul className="text-slate-300 text-sm space-y-1">
+                <li>• Enable two-factor authentication for enhanced security</li>
+                <li>• Regularly review audit logs for suspicious activity</li>
+                <li>• Use strong, unique passwords for all accounts</li>
+                <li>• Keep your software and devices updated</li>
+              </ul>
             </div>
           </div>
         </CardContent>

@@ -1,281 +1,307 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Switch } from '@/components/ui/switch';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   Zap, 
-  Clock, 
-  Bell, 
-  Mail,
+  Mail, 
   MessageSquare,
-  RefreshCw,
+  Calendar,
   Target,
-  TrendingUp,
   Users,
-  Package,
-  DollarSign,
-  Calendar
+  TrendingUp,
+  Settings,
+  Play,
+  Pause,
+  BarChart3
 } from 'lucide-react';
+import { MarketingAutomationService } from '@/services/pro/MarketingAutomationService';
+import { ChatbotService } from '@/services/pro/ChatbotService';
+import { ProLicenseService } from '@/services/pro/ProLicenseService';
+import { toast } from '@/hooks/use-toast';
 
 export function AdvancedAutomation() {
-  const [automations, setAutomations] = useState({
-    orderReminders: true,
-    paymentAlerts: true,
-    stockAlerts: false,
-    deliveryNotifications: true,
-    weeklyReports: false,
-    priceUpdates: false,
-    customerSegmentation: true,
-    inventoryReorder: false
-  });
+  const [campaigns, setCampaigns] = useState<any[]>([]);
+  const [chatbotStats, setChatbotStats] = useState<any>(null);
+  const [marketingStats, setMarketingStats] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const toggleAutomation = (automation: string) => {
-    setAutomations(prev => ({
-      ...prev,
-      [automation]: !prev[automation]
-    }));
+  useEffect(() => {
+    loadAutomationData();
+  }, []);
+
+  const loadAutomationData = () => {
+    if (ProLicenseService.hasFeature('marketing_automation')) {
+      const campaignData = MarketingAutomationService.getCampaigns();
+      setCampaigns(campaignData);
+      
+      const marketing = MarketingAutomationService.getAnalytics();
+      setMarketingStats(marketing);
+    }
+
+    if (ProLicenseService.hasFeature('chatbot')) {
+      const chatbot = ChatbotService.getChatbotAnalytics();
+      setChatbotStats(chatbot);
+    }
   };
 
-  const automationRules = [
+  const createSampleCampaign = async () => {
+    if (!ProLicenseService.hasFeature('marketing_automation')) {
+      toast({
+        title: "Upgrade Required",
+        description: "Marketing Automation requires a Pro license",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      await MarketingAutomationService.createCampaign({
+        name: 'Welcome New Customers',
+        type: 'email',
+        segmentId: 'segment_regular',
+        template: {
+          subject: 'Welcome to Vikas Milk Centre!',
+          content: 'Thank you for choosing us for your dairy needs...',
+          variables: ['customer_name', 'order_total']
+        },
+        status: 'draft'
+      });
+
+      loadAutomationData();
+      toast({
+        title: "Campaign Created",
+        description: "Your marketing campaign has been created successfully"
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to create campaign",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const startChatbotSession = async () => {
+    if (!ProLicenseService.hasFeature('chatbot')) {
+      toast({
+        title: "Upgrade Required",
+        description: "AI Chatbot requires a Pro license",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const session = await ChatbotService.createSession('customer_123');
+      await ChatbotService.sendMessage(session.id, 'Hello, I need help with my order', 'user');
+      
+      loadAutomationData();
+      toast({
+        title: "Chatbot Session Started",
+        description: "AI assistant is ready to help customers"
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to start chatbot session",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const automationFeatures = [
     {
-      id: 'orderReminders',
-      title: 'Order Reminder System',
-      description: 'Automatically remind customers about pending orders',
-      icon: Bell,
-      trigger: 'Daily at 9:00 AM',
-      category: 'Customer Communication',
-      color: 'from-blue-500 to-cyan-500'
+      id: 'email_marketing',
+      title: 'Email Marketing',
+      description: 'Automated email campaigns and newsletters',
+      icon: Mail,
+      action: createSampleCampaign,
+      feature: 'marketing_automation',
+      metrics: marketingStats ? `${marketingStats.totalCampaigns} campaigns` : '0 campaigns'
     },
     {
-      id: 'paymentAlerts',
-      title: 'Payment Due Alerts',
-      description: 'Send payment reminders to customers with outstanding dues',
-      icon: DollarSign,
-      trigger: 'Weekly on Monday',
-      category: 'Financial Management',
-      color: 'from-green-500 to-emerald-500'
+      id: 'ai_chatbot',
+      title: 'AI Chatbot',
+      description: 'Intelligent customer support automation',
+      icon: MessageSquare,
+      action: startChatbotSession,
+      feature: 'chatbot',
+      metrics: chatbotStats ? `${chatbotStats.totalSessions} sessions` : '0 sessions'
     },
     {
-      id: 'stockAlerts',
-      title: 'Low Stock Notifications',
-      description: 'Alert when product inventory drops below threshold',
-      icon: Package,
-      trigger: 'Real-time monitoring',
-      category: 'Inventory Management',
-      color: 'from-orange-500 to-red-500'
-    },
-    {
-      id: 'deliveryNotifications',
-      title: 'Delivery Updates',
-      description: 'Automated delivery status updates to customers',
-      icon: RefreshCw,
-      trigger: 'On status change',
-      category: 'Delivery Management',
-      color: 'from-purple-500 to-pink-500'
-    },
-    {
-      id: 'weeklyReports',
-      title: 'Weekly Business Reports',
-      description: 'Automated generation and distribution of business reports',
-      icon: TrendingUp,
-      trigger: 'Every Sunday at 8:00 PM',
-      category: 'Analytics & Reporting',
-      color: 'from-indigo-500 to-purple-500'
-    },
-    {
-      id: 'priceUpdates',
-      title: 'Dynamic Price Updates',
-      description: 'Automatically adjust prices based on market conditions',
-      icon: Target,
-      trigger: 'Market data changes',
-      category: 'Pricing Management',
-      color: 'from-yellow-500 to-orange-500'
-    },
-    {
-      id: 'customerSegmentation',
-      title: 'Customer Segmentation',
-      description: 'Automatically categorize customers based on behavior',
-      icon: Users,
-      trigger: 'Monthly analysis',
-      category: 'Customer Analytics',
-      color: 'from-teal-500 to-green-500'
-    },
-    {
-      id: 'inventoryReorder',
-      title: 'Smart Inventory Reorder',
-      description: 'Automatically generate purchase orders for low stock items',
-      icon: RefreshCw,
-      trigger: 'Stock threshold reached',
-      category: 'Supply Chain',
-      color: 'from-red-500 to-pink-500'
+      id: 'workflow_automation',
+      title: 'Workflow Automation',
+      description: 'Automate business processes and tasks',
+      icon: Settings,
+      action: () => {},
+      feature: 'workflow_automation',
+      metrics: 'Coming soon'
     }
   ];
 
-  const activeAutomations = automationRules.filter(rule => automations[rule.id]);
-
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="text-center space-y-2">
-        <h2 className="text-3xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent flex items-center justify-center gap-3">
-          <Zap className="h-8 w-8 text-purple-400" />
-          Advanced Automation
-        </h2>
-        <p className="text-slate-300">Intelligent workflows that run your business automatically</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-bold text-white flex items-center gap-2">
+            <Zap className="h-6 w-6 text-purple-400" />
+            Advanced Automation
+          </h2>
+          <p className="text-slate-400">Automate marketing, support, and workflows</p>
+        </div>
+        <Badge className="bg-purple-600/20 text-purple-400 border-purple-500/30">
+          Smart Automation
+        </Badge>
       </div>
 
-      {/* Automation Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card className="bg-slate-900/50 border-slate-700/50">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-slate-400 text-sm font-medium">Active Rules</p>
-                <p className="text-2xl font-bold text-white">{activeAutomations.length}</p>
-              </div>
-              <Zap className="h-8 w-8 text-purple-400" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-slate-900/50 border-slate-700/50">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-slate-400 text-sm font-medium">Time Saved</p>
-                <p className="text-2xl font-bold text-white">12h/week</p>
-              </div>
-              <Clock className="h-8 w-8 text-green-400" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-slate-900/50 border-slate-700/50">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-slate-400 text-sm font-medium">Tasks Automated</p>
-                <p className="text-2xl font-bold text-white">847</p>
-              </div>
-              <Target className="h-8 w-8 text-blue-400" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-slate-900/50 border-slate-700/50">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-slate-400 text-sm font-medium">Success Rate</p>
-                <p className="text-2xl font-bold text-white">98.5%</p>
-              </div>
-              <TrendingUp className="h-8 w-8 text-yellow-400" />
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Automation Rules */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {automationRules.map((rule) => {
-          const Icon = rule.icon;
-          const isActive = automations[rule.id];
+      {/* Feature Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {automationFeatures.map((feature) => {
+          const Icon = feature.icon;
+          const hasAccess = ProLicenseService.hasFeature(feature.feature);
           
           return (
-            <Card key={rule.id} className={`bg-slate-900/50 border-slate-700/50 transition-all duration-300 ${
-              isActive ? 'ring-2 ring-purple-500/30' : ''
-            }`}>
+            <Card key={feature.id} className="bg-slate-900/50 border-slate-700/50">
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className={`p-2 rounded-lg bg-gradient-to-r ${rule.color}`}>
-                      <Icon className="h-5 w-5 text-white" />
-                    </div>
-                    <div>
-                      <CardTitle className="text-white text-sm font-semibold">{rule.title}</CardTitle>
-                      <Badge variant="outline" className="text-xs mt-1 border-slate-600 text-slate-400">
-                        {rule.category}
-                      </Badge>
-                    </div>
-                  </div>
-                  <Switch
-                    checked={isActive}
-                    onCheckedChange={() => toggleAutomation(rule.id)}
-                  />
+                  <Icon className={hasAccess ? 'h-5 w-5 text-purple-400' : 'h-5 w-5 text-slate-400'} />
+                  {!hasAccess && (
+                    <Badge variant="outline" className="text-xs border-yellow-500/30 text-yellow-400">
+                      PRO
+                    </Badge>
+                  )}
                 </div>
+                <CardTitle className="text-white text-lg">{feature.title}</CardTitle>
               </CardHeader>
-              <CardContent className="pt-0">
-                <p className="text-slate-400 text-sm mb-3">{rule.description}</p>
+              <CardContent>
+                <p className="text-slate-400 text-sm mb-2">{feature.description}</p>
+                <p className="text-slate-500 text-xs mb-4">{feature.metrics}</p>
                 
-                <div className="flex items-center gap-2 text-slate-300 text-xs mb-3">
-                  <Calendar className="w-3 h-3" />
-                  <span>Trigger: {rule.trigger}</span>
-                </div>
-                
-                {isActive && (
-                  <div className="flex items-center gap-2 text-green-400 text-xs">
-                    <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-                    <span>Running Automatically</span>
-                  </div>
-                )}
+                <Button 
+                  onClick={feature.action}
+                  disabled={!hasAccess || isLoading}
+                  className={hasAccess 
+                    ? "w-full bg-purple-600 hover:bg-purple-700" 
+                    : "w-full bg-slate-700 text-slate-400 cursor-not-allowed"
+                  }
+                >
+                  {isLoading ? (
+                    <div className="flex items-center gap-2">
+                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                      Processing...
+                    </div>
+                  ) : hasAccess ? (
+                    <>
+                      <Play className="mr-2 h-4 w-4" />
+                      Start
+                    </>
+                  ) : (
+                    'Upgrade Required'
+                  )}
+                </Button>
               </CardContent>
             </Card>
           );
         })}
       </div>
 
-      {/* Automation Builder */}
+      {/* Automation Tabs */}
       <Card className="bg-slate-900/50 border-slate-700/50">
-        <CardHeader>
-          <CardTitle className="text-white flex items-center gap-2">
-            <Zap className="h-5 w-5" />
-            Automation Builder
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="text-center py-8">
-            <div className="max-w-md mx-auto">
-              <Zap className="h-16 w-16 text-purple-400 mx-auto mb-4" />
-              <h3 className="text-xl font-bold text-white mb-2">Create Custom Automation</h3>
-              <p className="text-slate-400 mb-6">Build your own automation workflows with our visual builder</p>
-              
-              <div className="flex gap-3 justify-center">
-                <Button variant="outline" className="border-slate-600 text-slate-300">
-                  <MessageSquare className="mr-2 h-4 w-4" />
-                  Template Gallery
-                </Button>
-                <Button className="bg-gradient-to-r from-purple-600 to-pink-600">
-                  <Zap className="mr-2 h-4 w-4" />
-                  Create Automation
-                </Button>
-              </div>
+        <CardContent className="p-0">
+          <Tabs defaultValue="campaigns" className="w-full">
+            <div className="px-6 pt-6">
+              <TabsList className="grid w-full grid-cols-3 bg-slate-800">
+                <TabsTrigger value="campaigns" className="data-[state=active]:bg-slate-700">
+                  Marketing Campaigns
+                </TabsTrigger>
+                <TabsTrigger value="chatbot" className="data-[state=active]:bg-slate-700">
+                  Chatbot Analytics
+                </TabsTrigger>
+                <TabsTrigger value="workflows" className="data-[state=active]:bg-slate-700">
+                  Workflows
+                </TabsTrigger>
+              </TabsList>
             </div>
-          </div>
-        </CardContent>
-      </Card>
 
-      {/* Recent Activity */}
-      <Card className="bg-gradient-to-r from-purple-600/20 to-pink-600/20 border-purple-500/30">
-        <CardContent className="p-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div className="p-3 bg-gradient-to-br from-purple-500 to-pink-600 rounded-xl">
-                <Clock className="h-6 w-6 text-white" />
+            <TabsContent value="campaigns" className="mt-6 px-6 pb-6">
+              {campaigns.length > 0 ? (
+                <div className="space-y-4">
+                  {campaigns.map((campaign, index) => (
+                    <div key={index} className="flex items-center justify-between p-4 bg-slate-800/50 rounded-lg">
+                      <div className="flex-1">
+                        <h4 className="text-white font-medium">{campaign.name}</h4>
+                        <p className="text-slate-400 text-sm">{campaign.type} • {campaign.status}</p>
+                      </div>
+                      <div className="flex items-center gap-4">
+                        <div className="text-center">
+                          <p className="text-white font-medium">{campaign.metrics.sent}</p>
+                          <p className="text-slate-400 text-xs">Sent</p>
+                        </div>
+                        <div className="text-center">
+                          <p className="text-white font-medium">{campaign.metrics.opened}</p>
+                          <p className="text-slate-400 text-xs">Opened</p>
+                        </div>
+                        <Button size="sm" variant="outline" className="border-slate-600">
+                          <BarChart3 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <Mail className="h-12 w-12 text-slate-600 mx-auto mb-4" />
+                  <p className="text-slate-400">No marketing campaigns yet</p>
+                  <p className="text-slate-500 text-sm">Create your first automated campaign</p>
+                </div>
+              )}
+            </TabsContent>
+
+            <TabsContent value="chatbot" className="mt-6 px-6 pb-6">
+              {chatbotStats ? (
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                  <div className="text-center p-4 bg-slate-800/50 rounded-lg">
+                    <p className="text-2xl font-bold text-white">{chatbotStats.totalSessions}</p>
+                    <p className="text-slate-400 text-sm">Total Sessions</p>
+                  </div>
+                  <div className="text-center p-4 bg-slate-800/50 rounded-lg">
+                    <p className="text-2xl font-bold text-white">{chatbotStats.resolvedSessions}</p>
+                    <p className="text-slate-400 text-sm">Resolved</p>
+                  </div>
+                  <div className="text-center p-4 bg-slate-800/50 rounded-lg">
+                    <p className="text-2xl font-bold text-white">{Math.round(chatbotStats.resolutionRate)}%</p>
+                    <p className="text-slate-400 text-sm">Resolution Rate</p>
+                  </div>
+                  <div className="text-center p-4 bg-slate-800/50 rounded-lg">
+                    <p className="text-2xl font-bold text-white">{chatbotStats.avgSatisfaction.toFixed(1)}</p>
+                    <p className="text-slate-400 text-sm">Satisfaction</p>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <MessageSquare className="h-12 w-12 text-slate-600 mx-auto mb-4" />
+                  <p className="text-slate-400">No chatbot sessions yet</p>
+                  <p className="text-slate-500 text-sm">Start your first AI-powered conversation</p>
+                </div>
+              )}
+            </TabsContent>
+
+            <TabsContent value="workflows" className="mt-6 px-6 pb-6">
+              <div className="text-center py-8">
+                <Settings className="h-12 w-12 text-slate-600 mx-auto mb-4" />
+                <p className="text-slate-400">Workflow automation coming soon</p>
+                <p className="text-slate-500 text-sm">Advanced business process automation</p>
               </div>
-              <div>
-                <h3 className="text-xl font-bold text-white">Automation Activity</h3>
-                <p className="text-slate-300">Your automations have saved 12 hours this week</p>
-              </div>
-            </div>
-            <div className="text-right">
-              <div className="flex items-center gap-2 text-purple-400 mb-2">
-                <div className="w-2 h-2 bg-purple-400 rounded-full animate-pulse"></div>
-                <span className="text-sm font-medium">{activeAutomations.length} Rules Active</span>
-              </div>
-              <p className="text-slate-400 text-sm">847 tasks completed automatically</p>
-            </div>
-          </div>
+            </TabsContent>
+          </Tabs>
         </CardContent>
       </Card>
     </div>
