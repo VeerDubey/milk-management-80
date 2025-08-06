@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useData } from '@/contexts/DataContext';
+import { useData } from '@/contexts/data/DataContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
