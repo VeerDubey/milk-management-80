@@ -109,7 +109,7 @@ export const StorageService = {
         toast.success('Data exported successfully');
         return true;
       } else {
-        toast.error(`Export failed: ${result.error}`);
+        toast.error('Export failed');
         return false;
       }
     } catch (error) {

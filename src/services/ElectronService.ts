@@ -1,23 +1,17 @@
 
-// ElectronService.ts - Unified interface for Electron functionality with web fallbacks
+// ElectronService.ts - Web-only service (Electron dependencies removed)
 
 /**
- * This service provides a unified interface for Electron functionality,
- * with fallbacks for web-only mode.
+ * This service provides web-only functionality with fallbacks.
+ * Electron dependencies have been removed to avoid build issues.
  */
 export const ElectronService = {
-  // Feature detection
-  isElectron: typeof window !== 'undefined' && 
-    window.electron !== undefined,
+  // Feature detection - always false in web-only mode
+  isElectron: false,
   
   // File operations
   downloadInvoice: async (data: string, filename: string) => {
-    if (typeof window !== 'undefined' && window.electron) {
-      return await window.electron.downloadInvoice(data, filename);
-    }
-    
-    // Web fallback for downloading
-    console.log('Electron not available: Creating download link in browser');
+    // Web-only download implementation
     const link = document.createElement('a');
     link.href = data;
     link.download = filename;
@@ -28,12 +22,7 @@ export const ElectronService = {
   },
   
   printInvoice: async (data: string) => {
-    if (typeof window !== 'undefined' && window.electron) {
-      return await window.electron.printInvoice(data);
-    }
-    
-    // Web fallback for printing
-    console.log('Electron not available: Opening print dialog in browser');
+    // Web-only print implementation
     const iframe = document.createElement('iframe');
     iframe.style.display = 'none';
     iframe.src = data;
@@ -54,35 +43,20 @@ export const ElectronService = {
   },
   
   getPrinters: async () => {
-    if (typeof window !== 'undefined' && window.electron) {
-      return await window.electron.getPrinters();
-    }
-    
-    // Web fallback
-    console.log('Electron not available: Cannot get printers');
+    // Web-only implementation - no printers available
     return { success: false, printers: [] };
   },
   
   // System operations
   system: {
     openExternal: async (url: string) => {
-      if (typeof window !== 'undefined' && window.electron) {
-        return await window.electron.system.openExternal(url);
-      }
-      
-      // Web fallback
-      console.log('Electron not available: Opening URL in new tab');
+      // Web-only implementation
       window.open(url, '_blank');
       return true;
     },
     
     copyToClipboard: async (text: string) => {
-      if (typeof window !== 'undefined' && window.electron) {
-        return await window.electron.system.copyToClipboard(text);
-      }
-      
-      // Web fallback for clipboard
-      console.log('Electron not available: Using browser clipboard API');
+      // Web-only clipboard implementation
       try {
         await navigator.clipboard.writeText(text);
         return { success: true };
@@ -93,12 +67,7 @@ export const ElectronService = {
     },
     
     readFromClipboard: async () => {
-      if (typeof window !== 'undefined' && window.electron) {
-        return await window.electron.system.readFromClipboard();
-      }
-      
-      // Web fallback for clipboard
-      console.log('Electron not available: Using browser clipboard API');
+      // Web-only clipboard implementation
       try {
         const text = await navigator.clipboard.readText();
         return { success: true, text };
@@ -109,11 +78,7 @@ export const ElectronService = {
     },
     
     isPlatform: async (platform: string) => {
-      if (typeof window !== 'undefined' && window.electron) {
-        return await window.electron.system.isPlatform(platform);
-      }
-      
-      // Web fallback - detect browser platform
+      // Web-only platform detection
       const userAgent = navigator.userAgent.toLowerCase();
       if (platform === 'windows') return userAgent.includes('win');
       if (platform === 'mac') return userAgent.includes('mac');
@@ -124,12 +89,7 @@ export const ElectronService = {
   
   // Data import/export operations
   exportData: async (data: string, filename: string) => {
-    if (typeof window !== 'undefined' && window.electron) {
-      return await window.electron.exportData(data, filename);
-    }
-    
-    // Web fallback for data export (same as download)
-    console.log('Electron not available: Creating download link in browser for data export');
+    // Web-only data export implementation
     const link = document.createElement('a');
     link.href = `data:text/json;charset=utf-8,${encodeURIComponent(data)}`;
     link.download = filename;
@@ -140,12 +100,7 @@ export const ElectronService = {
   },
   
   importData: async () => {
-    if (typeof window !== 'undefined' && window.electron) {
-      return await window.electron.importData();
-    }
-    
-    // Web fallback for data import
-    console.log('Electron not available: Using file input dialog for data import');
+    // Web-only data import implementation
     return new Promise((resolve) => {
       const input = document.createElement('input');
       input.type = 'file';
@@ -188,12 +143,7 @@ export const ElectronService = {
   
   // Log saving operation
   saveLog: async (data: string, filename: string) => {
-    if (typeof window !== 'undefined' && window.electron) {
-      return await window.electron.saveLog(data, filename);
-    }
-    
-    // Web fallback for log saving (same as download)
-    console.log('Electron not available: Creating download link in browser for log saving');
+    // Web-only log saving implementation
     const link = document.createElement('a');
     link.href = `data:text/plain;charset=utf-8,${encodeURIComponent(data)}`;
     link.download = filename;
