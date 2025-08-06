@@ -1,10 +1,9 @@
-
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
 import { componentTagger } from "lovable-tagger";
 
-// https://vitejs.dev/config/
+// Web-only Vite configuration (no Electron dependencies)
 export default defineConfig(({ mode }) => ({
   server: {
     host: "::",
@@ -19,9 +18,8 @@ export default defineConfig(({ mode }) => ({
       "@": path.resolve(__dirname, "./src"),
     },
   },
-  base: './', // This is crucial for Electron to load assets correctly when packaged
+  base: './',
   build: {
-    // Optimized build configuration for npm-only environment
     outDir: 'dist',
     assetsDir: 'assets',
     sourcemap: mode === 'development',
@@ -30,27 +28,15 @@ export default defineConfig(({ mode }) => ({
         manualChunks: {
           'react-vendor': ['react', 'react-dom', 'react-router-dom'],
           'ui-vendor': [
-            '@radix-ui/react-accordion',
-            '@radix-ui/react-alert-dialog',
-            '@radix-ui/react-aspect-ratio',
-            '@radix-ui/react-avatar',
-            '@radix-ui/react-checkbox',
             '@radix-ui/react-dialog',
-            '@radix-ui/react-dropdown-menu',
-            '@radix-ui/react-label',
+            '@radix-ui/react-tabs',
             '@radix-ui/react-popover',
             '@radix-ui/react-select',
-            '@radix-ui/react-separator',
-            '@radix-ui/react-slot',
-            '@radix-ui/react-tabs',
-            '@radix-ui/react-toast',
           ],
-          'utils-vendor': ['date-fns', 'clsx', 'sonner', 'zod'],
-          'chart-vendor': ['recharts']
+          'utils-vendor': ['date-fns', 'clsx', 'sonner'],
         }
       }
     },
-    // Add better error handling for missing optional dependencies
     commonjsOptions: {
       esmExternals: true,
       requireReturnsDefault: 'auto',
@@ -59,15 +45,12 @@ export default defineConfig(({ mode }) => ({
   },
   optimizeDeps: {
     esbuildOptions: {
-      // Add a custom define to allow fallbacks for missing packages
       define: {
         'process.env.NODE_ENV': JSON.stringify(mode),
-        'process.env.VITE_ALLOW_MISSING_DEPENDENCIES': JSON.stringify('true'),
+        'process.env.WEB_ONLY_MODE': JSON.stringify('true'),
       }
     },
-    // Exclude ALL Electron-related packages from optimization
-    exclude: ['electron', 'electron-is-dev', 'electron-log', '@electron/node-gyp', 'node-gyp']
-  },
-  // Define external dependencies to prevent bundling issues
-  external: mode === 'development' ? [] : ['electron', '@electron/node-gyp']
+    // Only exclude Node.js built-ins for web compatibility
+    exclude: ['fs', 'path', 'os', 'crypto']
+  }
 }));
