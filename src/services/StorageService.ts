@@ -1,5 +1,5 @@
 
-import { ElectronService } from './ElectronService';
+// Web-only storage service
 import { toast } from 'sonner';
 
 /**
@@ -102,8 +102,14 @@ export const StorageService = {
       const jsonData = JSON.stringify(data, null, 2);
       const filename = `milk-center-backup-${new Date().toISOString().slice(0, 10)}.json`;
       
-      // Use ElectronService to export data
-      const result = await ElectronService.exportData(jsonData, filename);
+      // Web-only export using browser download
+      const link = document.createElement('a');
+      link.href = `data:text/json;charset=utf-8,${encodeURIComponent(jsonData)}`;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      const result = { success: true };
       
       if (result.success) {
         toast.success('Data exported successfully');
@@ -125,8 +131,20 @@ export const StorageService = {
    */
   importData: async (): Promise<boolean> => {
     try {
-      // Use ElectronService to import data
-      const result = await ElectronService.importData();
+      // Web-only import using file input
+      const result = await new Promise<{success: boolean, data?: string}>((resolve) => {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = '.json';
+        input.onchange = (e: any) => {
+          const file = e.target.files?.[0];
+          if (!file) return resolve({ success: false });
+          const reader = new FileReader();
+          reader.onload = () => resolve({ success: true, data: reader.result as string });
+          reader.readAsText(file);
+        };
+        input.click();
+      });
       
       if (result && typeof result === 'object' && 'success' in result && result.success && 'data' in result && result.data) {
         try {
@@ -189,8 +207,14 @@ export const StorageService = {
     try {
       const filename = `milk-center-logs-${new Date().toISOString().slice(0, 10)}.txt`;
       
-      // Use ElectronService to save logs
-      const result = await ElectronService.saveLog(logs, filename);
+      // Web-only log saving
+      const link = document.createElement('a');
+      link.href = `data:text/plain;charset=utf-8,${encodeURIComponent(logs)}`;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      const result = { success: true };
       
       if (result && typeof result === 'object' && 'success' in result) {
         if (result.success) {

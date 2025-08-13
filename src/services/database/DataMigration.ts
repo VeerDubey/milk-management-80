@@ -1,5 +1,5 @@
 import { db } from './OfflineDatabase';
-import { ElectronService } from '../ElectronService';
+// Web-only data migration
 
 export class DataMigrationService {
   private readonly DATA_VERSION = '1.0.0';
@@ -145,13 +145,20 @@ export class DataMigrationService {
       const exportData = JSON.stringify(data, null, 2);
       const filename = `vikas-milk-center-backup-${new Date().toISOString().split('T')[0]}.json`;
 
-      const result = await ElectronService.exportData(exportData, filename) as any;
+      // Web-only export
+      const link = document.createElement('a');
+      link.href = `data:text/json;charset=utf-8,${encodeURIComponent(exportData)}`;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      const result = { success: true };
       
       if (result.success) {
         console.log('✅ Data exported successfully');
         return { success: true, message: 'Data exported successfully' };
       } else {
-        throw new Error(result.error || 'Export failed');
+        throw new Error('Export failed');
       }
 
     } catch (error) {
@@ -164,10 +171,23 @@ export class DataMigrationService {
     try {
       console.log('📥 Importing data...');
 
-      const result = await ElectronService.importData() as any;
+      // Web-only import
+      const result = await new Promise<{success: boolean, data?: string}>((resolve) => {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = '.json';
+        input.onchange = (e: any) => {
+          const file = e.target.files?.[0];
+          if (!file) return resolve({ success: false });
+          const reader = new FileReader();
+          reader.onload = () => resolve({ success: true, data: reader.result as string });
+          reader.readAsText(file);
+        };
+        input.click();
+      });
       
       if (!result.success) {
-        throw new Error(result.error || 'Import failed');
+        throw new Error('Import failed');
       }
 
       const importedData = JSON.parse(result.data);

@@ -8,7 +8,7 @@ interface RestoreControlsProps {
 }
 
 export const RestoreControls = ({ onImport, isImporting }: RestoreControlsProps) => {
-  const isElectron = Boolean(window.electron?.isElectron);
+  const isElectron = false; // Web-only mode
 
   return (
     <div>

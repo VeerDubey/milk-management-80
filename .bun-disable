@@ -1,4 +1,0 @@
-# This file forces the system to use npm instead of bun
-# Remove this file to re-enable bun usage
-USE_NPM=true
-NO_BUN=true

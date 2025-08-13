@@ -1,5 +1,5 @@
 
-import { ElectronService } from './ElectronService';
+// Web-only download service
 import { toast } from 'sonner';
 
 export interface DownloadOptions {
@@ -17,16 +17,7 @@ export class DownloadService {
     const { filename, data, mimeType = 'application/octet-stream', showNotification = true } = options;
     
     try {
-      // Try Electron first if available
-      if (ElectronService.isElectron) {
-        const dataString = typeof data === 'string' ? data : await this.blobToString(data);
-        const result = await ElectronService.exportData(dataString, filename);
-        
-        if (result.success) {
-          if (showNotification) toast.success(`${filename} downloaded successfully`);
-          return true;
-        }
-      }
+      // Web-only download implementation
       
       // Fallback to browser download
       return this.browserDownload(options);
