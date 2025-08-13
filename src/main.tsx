@@ -9,28 +9,8 @@ import { Toaster as SonnerToaster } from 'sonner'
 // PWA & Desktop App Setup
 console.log('🚀 Starting VMC Pro Desktop Application...');
 
-// Initialize offline database for desktop app (simplified)
-const initializeDatabase = async () => {
-  try {
-    const { dataMigration } = await import('./services/database/DataMigration');
-    console.log('📊 DataMigration service loaded');
-    
-    // Initialize default data on first run
-    setTimeout(async () => {
-      try {
-        await dataMigration.initializeDefaultData();
-        console.log('📊 Offline data initialized');
-      } catch (error) {
-        console.warn('Data initialization failed (continuing anyway):', error);
-      }
-    }, 2000);
-  } catch (error) {
-    console.warn('Failed to load DataMigration service:', error);
-  }
-};
-
-// Call initialization
-initializeDatabase();
+// Simplified initialization for debugging
+console.log('🚀 Starting VMC Pro...');
 
 // Register Service Worker for offline functionality
 if ('serviceWorker' in navigator) {
