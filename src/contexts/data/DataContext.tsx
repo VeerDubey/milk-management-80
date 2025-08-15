@@ -45,6 +45,7 @@ export const useData = () => {
 };
 
 export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  console.log('🟡 DataProvider rendering');
   // Use individual state hooks
   const customerState = useCustomerState();
   const productState = useProductState();

@@ -21,6 +21,7 @@ interface ExtendedAuthContextType extends AuthContextType {
 const AuthContext = createContext<ExtendedAuthContextType | undefined>(undefined);
 
 export const EnhancedAuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  console.log('🟠 EnhancedAuthProvider rendering');
   const [user, setUser] = useState<User | null>(null);
   const [currentCompany, setCurrentCompany] = useState<UserCompany | null>(null);
   const [companies, setCompanies] = useState<UserCompany[]>([]);
