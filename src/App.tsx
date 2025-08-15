@@ -2,6 +2,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { EnhancedAuthProvider } from '@/contexts/EnhancedAuthContext';
+import LoginLayout from '@/components/layout/LoginLayout';
 import { DataProvider } from '@/contexts/data/DataContext';
 import { ThemeProvider } from '@/components/ui/theme-provider';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
@@ -34,7 +35,7 @@ function App() {
             <Router>
               <Routes>
                 {/* Public Routes */}
-                <Route path="/login" element={<Login />} />
+                <Route path="/login" element={<LoginLayout><Login /></LoginLayout>} />
                 
                 {/* Protected Routes */}
                 <Route path="/" element={<ProtectedRoute />}>
