@@ -37,6 +37,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import InvoiceDownloadButton from '@/components/invoices/InvoiceDownloadButton';
+import { downloadInvoicePDF, printInvoicePDF } from '@/utils/invoicePdfGenerator';
 import { toast } from "sonner";
 
 export default function Invoices() {
@@ -121,8 +122,29 @@ export default function Invoices() {
   };
   
   const handleDownload = (id: string) => {
-    // In a real implementation, this would trigger the download
-    toast.success('Invoice download started');
+    const invoice = invoices.find(i => i.id === id);
+    if (invoice) {
+      const customer = customers.find(c => c.id === invoice.customerId);
+      downloadInvoicePDF({
+        id: invoice.id,
+        number: invoice.number,
+        date: invoice.date,
+        dueDate: invoice.dueDate,
+        customerName: customer?.name || invoice.customerName || 'Unknown',
+        customerAddress: customer?.address,
+        customerPhone: customer?.phone,
+        items: invoice.items || [],
+        subtotal: invoice.subtotal || invoice.total,
+        tax: invoice.tax,
+        discount: invoice.discount,
+        total: invoice.total,
+        status: invoice.status,
+        notes: invoice.notes,
+      });
+      toast.success('Invoice PDF downloaded');
+    } else {
+      toast.info('PDF download available for created invoices');
+    }
   };
 
   return (
